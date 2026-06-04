@@ -14,3 +14,16 @@ Common Beginner Mistakes
 - Using unstable locators that break when UI changes.
 - Mixing test data inside your test steps instead of a config file.
 - Not cleaning up between test runs (e.g., logging out before rerunning).
+
+Running Tests: Playwright
+
+- npx playwright test
+- npx playwright test tests/login.spec.js
+- npx playwright test --headed
+- npx playwright test --trace on
+- npx playwright show-report
+
+Github Workflow
+npm ci
+npx playwright install --with-deps
+npm test
