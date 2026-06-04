@@ -24,6 +24,7 @@ Running Tests: Playwright
 - npx playwright show-report
 
 Github Workflow
+
 npm ci
 npx playwright install --with-deps
 npm test
