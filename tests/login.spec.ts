@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test } from "@playwright/test";
 import { LoginPage } from "../pages/LoginPage";
 
 const validUsers = [
@@ -9,144 +9,47 @@ const validUsers = [
   "visual_user",
 ];
 
-test("Login with valid credentials", async ({ page }) => {
-  // 1. Navigate to login page
-  await page.goto("https://www.saucedemo.com/");
-
-  // 2. Enter username
-  await page.fill("#user-name", "standard_user");
-
-  // 3. Enter password from environment variable
+function getPassword(): string {
   const password = process.env.PASSWORD;
-  if (!password)
+  if (!password) {
     throw new Error("PASSWORD environment variable is not defined");
-  await page.fill("#password", password);
-
-  // 4. Click Login
-  await page.click("#login-button");
-
-  // 5. Verify dashboard
-  await expect(page).toHaveURL(/inventory/);
-  await expect(page.locator(".title")).toHaveText("Products");
-
-  // 6. Close browser
-  await page.close();
-});
-
-test("Login with valid credentials with POM", async ({ page }) => {
-  const loginPage = new LoginPage(page);
-
-  // 1. Navigate to login page
-  await loginPage.goto();
-
-  // 2. Enter username and password and click login
-  await loginPage.login("standard_user", process.env.PASSWORD || "");
-
-  // 5. Verify dashboard
-  await loginPage.assertOnDashboard();
-
-  // 6. Close browser
-  await loginPage.close();
-});
-
-test("Login with invalid credentials", async ({ page }) => {
-  // 1. Navigate to login page
-  await page.goto("https://www.saucedemo.com/");
-
-  // 2. Enter username
-  await page.fill("#user-name", "standard_user");
-
-  // 3. Enter password from environment variable
-  await page.fill("#password", "wrong_password");
-
-  // 4. Click Login
-  await page.click("#login-button");
-
-  // 5. Verify if the error message appears inside the dashboard
-  const errorMessage = page.locator('[data-test="error"]');
-
-  await expect(errorMessage).toBeVisible();
-  await expect(errorMessage).toHaveText(
-    "Epic sadface: Username and password do not match any user in this service",
-  );
-
-  // 6. Close browser
-  await page.close();
-});
-
-test("Login with valid credentials and logout", async ({ page }) => {
-  // 1. Navigate to login page
-  await page.goto("https://www.saucedemo.com/");
-
-  // 2. Enter username
-  await page.fill("#user-name", "standard_user");
-
-  // 3. Enter password from environment variable
-  const password = process.env.PASSWORD;
-  if (!password)
-    throw new Error("PASSWORD environment variable is not defined");
-  await page.fill("#password", password);
-
-  // 4. Click Login
-  await page.click("#login-button");
-
-  // 5. Verify dashboard
-  await expect(page).toHaveURL(/inventory/);
-  await expect(page.locator(".title")).toHaveText("Products");
-
-  // 6. Click on the menu button
-  await page.getByRole("button", { name: "Open Menu" }).click();
-  await expect(page.locator('[data-test="logout-sidebar-link"]')).toBeVisible();
-
-  // 7. Click on the logout link
-  await page.locator('[data-test="logout-sidebar-link"]').click();
-
-  // 8. Verify if we are back to the login page
-  await expect(page).toHaveURL("https://www.saucedemo.com/");
-  await expect(page.locator("#login-button")).toBeVisible();
-
-  // 9. Close browser
-  await page.close();
-});
-
-for (const username of validUsers) {
-  test(`Login with valid credentials and logout - ${username}`, async ({
-    page,
-  }) => {
-    // 1. Navigate to login page
-    await page.goto("https://www.saucedemo.com/");
-
-    // 2. Enter username
-    await page.fill("#user-name", username);
-
-    // 3. Enter password from environment variable
-    const password = process.env.PASSWORD;
-    if (!password)
-      throw new Error("PASSWORD environment variable is not defined");
-    //await page.fill("#password", password);
-    await page.getByPlaceholder("Password").fill(password);
-
-    // 4. Click Login
-    await page.click("#login-button");
-
-    // 5. Verify dashboard
-    await expect(page).toHaveURL(/inventory/);
-    await expect(page.locator(".title")).toHaveText("Products");
-
-    // 6. Click on the menu button
-    await page.getByRole("button", { name: "Open Menu" }).click();
-    await expect(
-      page.locator('[data-test="logout-sidebar-link"]'),
-    ).toBeVisible();
-
-    // 7. Click on the logout link
-    await page.locator('[data-test="logout-sidebar-link"]').click();
-
-    // 8. Verify if we are back to the login page
-    await expect(page).toHaveURL("https://www.saucedemo.com/");
-    await expect(page.locator("#login-button")).toBeVisible();
-
-    // 9. Close browser
-    await page.close();
-  });
+  }
+  return password;
 }
+
+test.describe("SauceDemo login flows", () => {
+  let loginPage: LoginPage;
+
+  test.beforeEach(async ({ page }) => {
+    loginPage = new LoginPage(page);
+    await loginPage.goto();
+  });
+
+  test("logs in successfully with valid credentials", async () => {
+    await loginPage.login("standard_user", getPassword());
+    await loginPage.assertOnDashboard();
+  });
+
+  test("shows an error for invalid credentials", async () => {
+    await loginPage.login("standard_user", "wrong_password");
+    await loginPage.expectErrorMessage(
+      "Epic sadface: Username and password do not match any user in this service",
+    );
+  });
+
+  test("logs out successfully", async () => {
+    await loginPage.login("standard_user", getPassword());
+    await loginPage.assertOnDashboard();
+    await loginPage.logout();
+    await loginPage.assertOnLoginPage();
+  });
+
+  for (const username of validUsers) {
+    test(`supports login for ${username}`, async () => {
+      await loginPage.login(username, getPassword());
+      await loginPage.assertOnDashboard();
+      await loginPage.logout();
+      await loginPage.assertOnLoginPage();
+    });
+  }
+});
