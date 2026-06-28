@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { LoginPage } from "../pages/LoginPage";
 
 const validUsers = [
   "standard_user",
@@ -32,6 +33,22 @@ test("Login with valid credentials", async ({ page }) => {
   await page.close();
 });
 
+test("Login with valid credentials with POM", async ({ page }) => {
+  const loginPage = new LoginPage(page);
+
+  // 1. Navigate to login page
+  await loginPage.goto();
+
+  // 2. Enter username and password and click login
+  await loginPage.login("standard_user", process.env.PASSWORD || "");
+
+  // 5. Verify dashboard
+  await loginPage.assertOnDashboard();
+
+  // 6. Close browser
+  await loginPage.close();
+});
+
 test("Login with invalid credentials", async ({ page }) => {
   // 1. Navigate to login page
   await page.goto("https://www.saucedemo.com/");
@@ -43,7 +60,7 @@ test("Login with invalid credentials", async ({ page }) => {
   await page.fill("#password", "wrong_password");
 
   // 4. Click Login
-  await page.click("#login-button");
+  await page.click("#login-button-invalid");
 
   // 5. Verify if the error message appears inside the dashboard
   const errorMessage = page.locator('[data-test="error"]');
@@ -106,7 +123,8 @@ for (const username of validUsers) {
     const password = process.env.PASSWORD;
     if (!password)
       throw new Error("PASSWORD environment variable is not defined");
-    await page.fill("#password", password);
+    //await page.fill("#password", password);
+    await page.getByPlaceholder("Password").fill(password);
 
     // 4. Click Login
     await page.click("#login-button");
