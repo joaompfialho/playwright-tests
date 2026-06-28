@@ -60,7 +60,7 @@ test("Login with invalid credentials", async ({ page }) => {
   await page.fill("#password", "wrong_password");
 
   // 4. Click Login
-  await page.click("#login-button-invalid");
+  await page.click("#login-button");
 
   // 5. Verify if the error message appears inside the dashboard
   const errorMessage = page.locator('[data-test="error"]');
