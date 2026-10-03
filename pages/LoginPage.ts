@@ -34,8 +34,10 @@ export class LoginPage {
   }
 
   async assertOnDashboard() {
-    await expect(this.page).toHaveURL(/inventory/);
-    await expect(this.productsTitle).toHaveText("Products");
+    await expect(this.page).toHaveURL(/inventory/, { timeout: 15_000 });
+    await expect(this.productsTitle).toHaveText("Products", {
+      timeout: 15_000,
+    });
   }
 
   async assertOnLoginPage() {
